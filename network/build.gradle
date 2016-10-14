@@ -1,0 +1,47 @@
+apply plugin: 'com.android.library'
+
+ext {
+    bintrayRepo = 'YashoidLibraries'
+    bintrayName = 'network'
+
+    publishedGroupId = 'com.yashoid'
+    libraryName = 'Network'
+    artifact = 'network'
+
+    libraryDescription = 'Network library with the ability to induce dependency on the request queues. Plus operations are seperated from requests, you can do multiple requests and time consuming codes in a single operation.'
+
+    siteUrl = 'https://github.com/yasharpm/Network'
+    gitUrl = 'https://github.com/yasharpm/Network.git'
+
+    libraryVersion = '1.0.0'
+
+    developerId = 'yasharpm'
+    developerName = 'Yashar PourMohammad'
+    developerEmail = 'yasharpm@gmail.com'
+
+    licenseName = 'The Apache Software License, Version 2.0'
+    licenseUrl = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+    allLicenses = ["Apache-2.0"]
+}
+
+android {
+    compileSdkVersion 24
+    buildToolsVersion "24.0.3"
+
+    defaultConfig {
+        minSdkVersion 11
+        targetSdkVersion 21
+        versionCode 1
+        versionName "1.0"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
+        }
+    }
+}
+
+apply from: 'https://raw.githubusercontent.com/nuuneoi/JCenter/master/installv1.gradle'
+apply from: 'https://raw.githubusercontent.com/nuuneoi/JCenter/master/bintrayv1.gradle'
