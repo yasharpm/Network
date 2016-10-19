@@ -3,6 +3,7 @@ package com.yashoid.network.request;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URLConnection;
@@ -55,6 +56,10 @@ public class MultipartBody implements BodyLoader {
 		mParts.put(name, value);
 	}
 
+	public void addPart(String name, String fileName, InputStream value) {
+		mParts.put(name, new InputStreamValue(fileName, value));
+	}
+
 	@Override
 	public void write(OutputStream output) throws IOException {
 		mOutputStream = output;
@@ -68,6 +73,9 @@ public class MultipartBody implements BodyLoader {
 			}
 			else if (value instanceof File) {
 				writeFilePart(name, (File) value);
+			}
+			else if (value instanceof InputStreamValue) {
+				writeInputStreamPart(name, (InputStreamValue) value);
 			}
 			
 			mOutputStream.flush();
@@ -85,32 +93,39 @@ public class MultipartBody implements BodyLoader {
 	}
 	
 	private void writeFilePart(String name, File value) throws IOException {
+		writeInputStreamPart(name, value.getName(), new FileInputStream(value));
+	}
+
+	private void writeInputStreamPart(String name, InputStreamValue value) throws IOException {
+		writeInputStreamPart(name, value.fileName, value.stream);
+	}
+
+	private void writeInputStreamPart(String name, String fileName, InputStream inputStream) throws IOException {
 		writePartStart();
-		
+
 		mOutputStream.write(
-				("Content-Disposition: form-data; name=\"" + name + "\"; filename=\"" + value.getName() + "\"\r\n")
+				("Content-Disposition: form-data; name=\"" + name + "\"; filename=\"" + fileName + "\"\r\n")
 						.getBytes(CHARSET)
-				);
+		);
 		mOutputStream.write(
-				("Content-Type: " + URLConnection.guessContentTypeFromName(value.getName()) + "\r\n")
+				("Content-Type: " + URLConnection.guessContentTypeFromName(fileName) + "\r\n")
 						.getBytes(CHARSET)
-				);
+		);
 		mOutputStream.write("Content-Transfer-Encoding: binary\r\n\r\n".getBytes(CHARSET));
-		
-		FileInputStream inputStream = new FileInputStream(value);
+
 		byte[] buffer = new byte[512];
 		int len = 0;
-		
+
 		while (len!=-1) {
 			len = inputStream.read(buffer);
-			
+
 			if (len>0) {
 				mOutputStream.write(buffer, 0, len);
 			}
 		}
-		
+
 		inputStream.close();
-		
+
 		mOutputStream.write("\r\n".getBytes(CHARSET));
 	}
 	
@@ -126,6 +141,18 @@ public class MultipartBody implements BodyLoader {
 	@Override
 	public boolean cancel() {
 		return false;
+	}
+
+	private static class InputStreamValue {
+
+		private String fileName;
+		private InputStream stream;
+
+		protected InputStreamValue(String fileName, InputStream stream) {
+			this.fileName = fileName;
+			this.stream = stream;
+		}
+
 	}
 
 }
