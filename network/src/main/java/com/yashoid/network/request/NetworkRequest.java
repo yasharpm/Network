@@ -1,5 +1,9 @@
 package com.yashoid.network.request;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -11,9 +15,6 @@ import java.net.ProtocolException;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
-
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 public abstract class NetworkRequest<Return> {
 	
@@ -334,7 +335,7 @@ public abstract class NetworkRequest<Return> {
 	}
 	
 	public static String toString(InputStream input, String charsetName) throws IOException {
-		StringBuilder sb = new StringBuilder();
+		ByteArrayOutputStream stringBuilder = new ByteArrayOutputStream();
 		
 		int len = 0;
 		byte[] buffer = new byte[256];
@@ -343,11 +344,11 @@ public abstract class NetworkRequest<Return> {
 			len = input.read(buffer);
 			
 			if (len>0) {
-				sb.append(new String(buffer, 0, len, charsetName));
+				stringBuilder.write(buffer, 0, len);
 			}
 		}
 		
-		return sb.toString();
+		return stringBuilder.toString(charsetName);
 	}
 	
 }
