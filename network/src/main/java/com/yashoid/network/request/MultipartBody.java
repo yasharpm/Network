@@ -34,7 +34,7 @@ public class MultipartBody implements BodyLoader {
 		
 		mBoundary = BOUNDARY_WRAPPER + System.currentTimeMillis() + BOUNDARY_WRAPPER;
 		
-		mParts = new HashMap<String, Object>(10);
+		mParts = new HashMap<>(10);
 		
 		mConnection.setUseCaches(false);
 		mConnection.setRequestProperty(NetworkRequest.CONTENT_TYPE, getContentType());
@@ -57,7 +57,11 @@ public class MultipartBody implements BodyLoader {
 	}
 
 	public void addPart(String name, String fileName, InputStream value) {
-		mParts.put(name, new InputStreamValue(fileName, value));
+		mParts.put(name, new InputStreamValue(fileName, value, 0));
+	}
+
+	public void addPart(String name, String fileName, InputStream value, long length) {
+		mParts.put(name, new InputStreamValue(fileName, value, length));
 	}
 
 	@Override
@@ -67,6 +71,8 @@ public class MultipartBody implements BodyLoader {
 		for (Entry<String, Object> part: mParts.entrySet()) {
 			String name = part.getKey();
 			Object value = part.getValue();
+
+			onStartedWritingPart(name);
 
 			if (value instanceof String) {
 				writeStringPart(name, (String) value);
@@ -79,6 +85,8 @@ public class MultipartBody implements BodyLoader {
 			}
 			
 			mOutputStream.flush();
+
+			onFinishedWritingPart(name);
 		}
 		
 		mOutputStream.write(("\r\n--" + mBoundary + "--\r\n").getBytes(CHARSET));
@@ -93,14 +101,14 @@ public class MultipartBody implements BodyLoader {
 	}
 	
 	private void writeFilePart(String name, File value) throws IOException {
-		writeInputStreamPart(name, value.getName(), new FileInputStream(value));
+		writeInputStreamPart(name, value.getName(), new FileInputStream(value), value.length());
 	}
 
 	private void writeInputStreamPart(String name, InputStreamValue value) throws IOException {
-		writeInputStreamPart(name, value.fileName, value.stream);
+		writeInputStreamPart(name, value.fileName, value.stream, value.length);
 	}
 
-	private void writeInputStreamPart(String name, String fileName, InputStream inputStream) throws IOException {
+	private void writeInputStreamPart(String name, String fileName, InputStream inputStream, long total) throws IOException {
 		writePartStart();
 
 		mOutputStream.write(
@@ -116,11 +124,17 @@ public class MultipartBody implements BodyLoader {
 		byte[] buffer = new byte[512];
 		int len = 0;
 
+		long progress = 0;
+
 		while (len!=-1) {
 			len = inputStream.read(buffer);
 
 			if (len>0) {
 				mOutputStream.write(buffer, 0, len);
+
+				progress += len;
+
+				onWritingPartProgress(name, progress, total);
 			}
 		}
 
@@ -131,6 +145,18 @@ public class MultipartBody implements BodyLoader {
 	
 	private void writePartStart() throws IOException {
 		mOutputStream.write(("--" + mBoundary + "\r\n").getBytes(CHARSET));
+	}
+
+	protected void onStartedWritingPart(String name) {
+
+	}
+
+	protected void onWritingPartProgress(String name, long progress, long total) {
+
+	}
+
+	protected void onFinishedWritingPart(String name) {
+
 	}
 
 	@Override
@@ -147,10 +173,12 @@ public class MultipartBody implements BodyLoader {
 
 		private String fileName;
 		private InputStream stream;
+		private long length;
 
-		protected InputStreamValue(String fileName, InputStream stream) {
+		protected InputStreamValue(String fileName, InputStream stream, long length) {
 			this.fileName = fileName;
 			this.stream = stream;
+			this.length = length;
 		}
 
 	}
