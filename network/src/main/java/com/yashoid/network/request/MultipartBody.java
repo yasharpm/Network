@@ -1,5 +1,7 @@
 package com.yashoid.network.request;
 
+import com.yashoid.network.request.NetworkRequest.BodyLoader;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -7,10 +9,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URLConnection;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map.Entry;
-
-import com.yashoid.network.request.NetworkRequest.BodyLoader;
 
 public class MultipartBody implements BodyLoader {
 
@@ -18,7 +19,7 @@ public class MultipartBody implements BodyLoader {
 	
 	private static final String CONTENT_TYPE = "multipart/form-data; boundary=";
 	
-	private static final String CHARSET = "UTF_8";
+	private static final String CHARSET = "UTF-8";
 	
 	private static final String STRING_PART_CONTENT_TYPE = "Content-Type: text/plain; charset=" + CHARSET + "\r\n";
 
@@ -27,7 +28,7 @@ public class MultipartBody implements BodyLoader {
 	
 	private String mBoundary;
 	
-	private HashMap<String, Object> mParts;
+	private HashMap<String, ArrayList<Object>> mParts;
 	
 	public MultipartBody(HttpURLConnection connection) {
 		mConnection = connection;
@@ -49,44 +50,58 @@ public class MultipartBody implements BodyLoader {
 	}
 	
 	public void addPart(String name, String value) {
-		mParts.put(name, value);
+		putPart(name, value);
 	}
 	
 	public void addPart(String name, File value) {
-		mParts.put(name, value);
+		putPart(name, value);
 	}
 
 	public void addPart(String name, String fileName, InputStream value) {
-		mParts.put(name, new InputStreamValue(fileName, value, 0));
+		putPart(name, new InputStreamValue(fileName, value, 0));
 	}
 
 	public void addPart(String name, String fileName, InputStream value, long length) {
-		mParts.put(name, new InputStreamValue(fileName, value, length));
+		putPart(name, new InputStreamValue(fileName, value, length));
+	}
+
+	private void putPart(String name, Object value) {
+		ArrayList<Object> values = mParts.get(name);
+
+		if (values == null) {
+			values = new ArrayList<>(4);
+
+			mParts.put(name, values);
+		}
+
+		values.add(value);
 	}
 
 	@Override
 	public void write(OutputStream output) throws IOException {
 		mOutputStream = output;
 		
-		for (Entry<String, Object> part: mParts.entrySet()) {
+		for (Entry<String, ArrayList<Object>> part: mParts.entrySet()) {
 			String name = part.getKey();
-			Object value = part.getValue();
+			ArrayList<Object> values = part.getValue();
 
-			onStartedWritingPart(name);
+			for (Object value: values) {
+				onStartedWritingPart(name);
 
-			if (value instanceof String) {
-				writeStringPart(name, (String) value);
-			}
-			else if (value instanceof File) {
-				writeFilePart(name, (File) value);
-			}
-			else if (value instanceof InputStreamValue) {
-				writeInputStreamPart(name, (InputStreamValue) value);
-			}
-			
-			mOutputStream.flush();
+				if (value instanceof String) {
+					writeStringPart(name, (String) value);
+				}
+				else if (value instanceof File) {
+					writeFilePart(name, (File) value);
+				}
+				else if (value instanceof InputStreamValue) {
+					writeInputStreamPart(name, (InputStreamValue) value);
+				}
 
-			onFinishedWritingPart(name);
+				mOutputStream.flush();
+
+				onFinishedWritingPart(name);
+			}
 		}
 		
 		mOutputStream.write(("\r\n--" + mBoundary + "--\r\n").getBytes(CHARSET));
@@ -121,7 +136,7 @@ public class MultipartBody implements BodyLoader {
 		);
 		mOutputStream.write("Content-Transfer-Encoding: binary\r\n\r\n".getBytes(CHARSET));
 
-		byte[] buffer = new byte[512];
+		byte[] buffer = new byte[1024];
 		int len = 0;
 
 		long progress = 0;
@@ -131,6 +146,7 @@ public class MultipartBody implements BodyLoader {
 
 			if (len>0) {
 				mOutputStream.write(buffer, 0, len);
+				mOutputStream.flush();
 
 				progress += len;
 
