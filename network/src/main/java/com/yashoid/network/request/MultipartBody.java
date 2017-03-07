@@ -104,7 +104,7 @@ public class MultipartBody implements BodyLoader {
 			}
 		}
 		
-		mOutputStream.write(("\r\n--" + mBoundary + "--\r\n").getBytes(CHARSET));
+		mOutputStream.write(("--" + mBoundary + "--\r\n").getBytes(CHARSET));
 	}
 	
 	private void writeStringPart(String name, String value) throws IOException {
