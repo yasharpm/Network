@@ -9,7 +9,7 @@ public class OperationSelector {
 	private Object lock = new Object();
 	
 	protected OperationSelector() {
-		mOperations = new ArrayList<NetworkOperation>(10);
+		mOperations = new ArrayList<>(10);
 	}
 	
 	protected void addOperation(NetworkOperation operation) {
@@ -21,7 +21,7 @@ public class OperationSelector {
 	protected boolean hasNext(int types) {
 		synchronized (lock) {
 			for (NetworkOperation operation: mOperations) {
-				if ((operation.getType()&types)>0) {
+				if ((operation.getType() & types) > 0) {
 					return true;
 				}
 			}
@@ -35,11 +35,11 @@ public class OperationSelector {
 			NetworkOperation priorityOperation = null;
 			
 			for (NetworkOperation operation: mOperations) {
-				if ((operation.getType()&types)>0) {
-					if (priorityOperation==null) {
+				if ((operation.getType() & types) > 0) {
+					if (priorityOperation == null) {
 						priorityOperation = operation;
 					}
-					else if (operation.getPriority()>priorityOperation.getPriority()) {
+					else if (operation.getPriority() > priorityOperation.getPriority()) {
 						priorityOperation = operation;
 					}
 				}

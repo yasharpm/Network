@@ -1,57 +1,78 @@
 package com.yashoid.network;
 
-import android.os.AsyncTask;
+import com.yashoid.office.AsyncOperation;
+import com.yashoid.office.task.TaskManager;
 
-public class OperationExecutor implements Runnable {
+public class OperationExecutor implements Runnable, OperationTypes {
 	
-	protected static interface OnExecutionFinishedListener {
+	protected interface OnExecutionFinishedListener {
 		
-		public void onExecutionFinished(NetworkOperation operation);
+		void onExecutionFinished(NetworkOperation operation);
 		
 	}
 	
-	protected abstract static class OperationTask extends AsyncTask<Void, Object, Void> {
+	protected abstract static class OperationTask extends AsyncOperation {
+
+		public OperationTask(TaskManager taskManager, String foregroundSection, String backgroundSection) {
+			super(taskManager, foregroundSection, backgroundSection);
+		}
 
 		protected void publishProgress(Object object) {
 			publishProgress(new Object[] { object });
 		}
 		
 	}
-	
+
+	private TaskManager mTaskManager;
+
 	private NetworkOperation mOperation;
 	private OnExecutionFinishedListener mOnExecutionFinishedListener;
 	
-	protected OperationExecutor(NetworkOperation operation, OnExecutionFinishedListener listener) {
+	protected OperationExecutor(TaskManager taskManager, NetworkOperation operation, OnExecutionFinishedListener listener) {
+		mTaskManager = taskManager;
+
 		mOperation = operation;
 		mOnExecutionFinishedListener = listener;
 	}
 	
 	@Override
 	public void run() {
-		new OperationTask() {
-			
+		new OperationTask(mTaskManager, mOperation.getForegroundSection(), getSectionForOperationType(mOperation.getType())) {
+
 			@Override
-			protected Void doInBackground(Void... params) {
+			protected void doInBackground() {
 				mOperation.execute(this);
-				
+
 				if (mOnExecutionFinishedListener!=null) {
 					mOnExecutionFinishedListener.onExecutionFinished(mOperation);
 				}
-				
-				return null;
 			}
 			
 			@Override
-			protected void onProgressUpdate(Object... values) {
-				mOperation.onProgressUpdate(values[0]);
+			protected void onProgressUpdate(Object value) {
+				mOperation.onProgressUpdate(value);
 			};
 			
 			@Override
-			protected void onPostExecute(Void result) {
+			protected void onPostExecute() {
 				mOperation.onOperationFinished();
 			};
 			
-		}.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, (Void[]) null);
+		}.execute();
+	}
+
+	private String getSectionForOperationType(int type) {
+		switch (type) {
+			case TYPE_UI_CONTENT:
+				return SECTION_UI_CONTENT;
+			case TYPE_USER_ACTION:
+				return SECTION_USER_ACTION;
+			case TYPE_BACKGRUOND:
+				return SECTION_BACKGROUND;
+		}
+
+		// TODO To be fixed on URGENT operations later after Office update.
+		return SECTION_UI_CONTENT;
 	}
 
 }

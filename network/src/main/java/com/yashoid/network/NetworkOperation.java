@@ -1,28 +1,28 @@
 package com.yashoid.network;
 
 import com.yashoid.network.OperationExecutor.OperationTask;
+import com.yashoid.office.task.TaskManager;
 
-public abstract class NetworkOperation {
-
-	public static final int PRIORITY_DEFAULT = 0;
-	public static final int PRIORITY_HIGH = 1;
-	public static final int PRIORITY_LOW = -1;
-	public static final int PRIORITY_MAX = 2;
-	public static final int PRIORITY_MIN = -2;
+public abstract class NetworkOperation implements OperationTypes {
 	
 	private int mType;
 	private int mPriority;
+	private String mForegroundSection;
 	
 	private OperationTask mTask;
 	
 	protected NetworkOperation(int type) {
-		mType = type;
-		mPriority = PRIORITY_DEFAULT;
+		this(type, PRIORITY_DEFAULT);
 	}
 	
 	protected NetworkOperation(int type, int priority) {
+		this(type, priority, TaskManager.MAIN);
+	}
+
+	protected NetworkOperation(int type, int priority, String foregroundSection) {
 		mType = type;
 		mPriority = priority;
+		mForegroundSection = foregroundSection;
 	}
 	
 	protected final int getType() {
@@ -35,6 +35,10 @@ public abstract class NetworkOperation {
 	
 	protected int getPriority() {
 		return mPriority;
+	}
+
+	protected final String getForegroundSection() {
+		return mForegroundSection;
 	}
 	
 	protected final void execute(OperationTask task) {
