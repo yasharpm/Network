@@ -39,7 +39,7 @@ public abstract class NetworkRequest<Return> {
 	public NetworkRequest(String url) throws IOException {
 		mURL = new URL(url);
 		mConnection = (HttpURLConnection) (mURL.openConnection());
-		
+
 		mConnection.setDoInput(true);
 	}
 	
@@ -339,12 +339,17 @@ public abstract class NetworkRequest<Return> {
 		
 		int len = 0;
 		byte[] buffer = new byte[256];
+		int readOffset = 0;
 		
-		while (len!=-1) {
-			len = input.read(buffer);
+		while (len != -1) {
+			len = input.read(buffer, readOffset, 256 - readOffset);
 			
-			if (len>0) {
-				stringBuilder.write(buffer, 0, len);
+			if (len + readOffset >= 8) {
+				int lengthToBeRead = ((len + readOffset) / 8) * 8;
+
+				stringBuilder.write(buffer, 0, lengthToBeRead);
+
+				readOffset = len - lengthToBeRead;
 			}
 		}
 		
