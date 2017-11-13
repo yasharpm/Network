@@ -69,10 +69,11 @@ public class OperationExecutor implements Runnable, OperationTypes {
 				return SECTION_USER_ACTION;
 			case TYPE_BACKGRUOND:
 				return SECTION_BACKGROUND;
+			case TYPE_URGENT:
+				return TaskManager.IMMEDIATELY;
 		}
 
-		// TODO To be fixed on URGENT operations later after Office update.
-		return SECTION_UI_CONTENT;
+		throw new IllegalArgumentException("Unrecognized operation type " + type + ".");
 	}
 
 }

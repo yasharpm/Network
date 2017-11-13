@@ -22,6 +22,10 @@ public class InternetForTest implements URLStreamHandlerFactory {
         return mInstance;
     }
 
+    public static void initialize() {
+        URL.setURLStreamHandlerFactory(getInstance());
+    }
+
     private long mTimeToConnect = 400;
     private long mTimeToGetInput = 200;
 

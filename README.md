@@ -6,6 +6,15 @@
 </ul>
 <p>There are two main classes: <code>NetworkOperaion</code> and <code>NetworkOperator</code>. You get the singleton instance of <code>NetworkOperator</code> and then post <code>NetworkOperations</code> on it to execute them.</p>
 
+## Usage
+
+Add the dependency:
+```Groovy
+dependencies {
+	compile 'com.yashoid:network:1.3.0'
+}
+```
+
 <h2>Network Operator</h2>
 There are three queues for running the operations.
 <ul>
