@@ -52,6 +52,10 @@ public class MockInternet {
         addRequestHandler("POST", url, handler);
     }
 
+    public void addPutHandler(String url, IRequestHandler handler) {
+        addRequestHandler("PUT", url, handler);
+    }
+
     public void addDeleteHandler(String url, IRequestHandler handler) {
         addRequestHandler("DELETE", url, handler);
     }

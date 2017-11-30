@@ -63,6 +63,10 @@ public class InternetForTest implements URLStreamHandlerFactory {
         mInternet.addPostHandler(url, handler);
     }
 
+    public void addPutHandler(String url, IRequestHandler handler) {
+        mInternet.addPutHandler(url, handler);
+    }
+
     public void addDeleteHandler(String url, IRequestHandler handler) {
         mInternet.addDeleteHandler(url, handler);
     }
