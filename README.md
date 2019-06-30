@@ -11,7 +11,7 @@
 Add the dependency:
 ```Groovy
 dependencies {
-	compile 'com.yashoid:network:1.3.0'
+	compile 'com.yashoid:network:1.3.2'
 }
 ```
 
@@ -36,7 +36,7 @@ There are three queues for running the operations.
 <li>JsonArrayRequest</li>
 <li>JsonReaderRequest</li>
 <li>FileRequest</li>
-<li>StringReques</li>
+<li>StringRequest</li>
 </ul>
 <p>There are useful methods to set the body for the request. Using them you can set different types of objects as the body that includes: JsonObject, JsonArray, String, InputStream, File. Calling <code>setBody()</code> will automatically change the request method to POST.</p>
 <p>In addition you can set the method of the request which you can use to set non-standard methods (HttpUrlRequest normally throws a runtime exception). Also there is a method to directly access the underlying <code>HttpUrlRequest</code> for other uses like setting request headers.</p>

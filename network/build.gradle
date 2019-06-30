@@ -13,7 +13,7 @@ ext {
     siteUrl = 'https://github.com/yasharpm/Network'
     gitUrl = 'https://github.com/yasharpm/Network.git'
 
-    libraryVersion = '1.3.1'
+    libraryVersion = '1.3.2'
 
     developerId = 'yasharpm'
     developerName = 'Yashar PourMohammad'
@@ -25,12 +25,11 @@ ext {
 }
 
 android {
-    compileSdkVersion 26
-    buildToolsVersion "27.0.0"
+    compileSdkVersion 28
 
     defaultConfig {
         minSdkVersion 16
-        targetSdkVersion 26
+        targetSdkVersion 28
         versionCode 1
         versionName "1.0"
     }
@@ -47,7 +46,7 @@ android {
 }
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
 
-    compile 'com.yashoid:office:1.2.0'
+    implementation 'com.yashoid:office:1.2.0'
 }
