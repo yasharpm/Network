@@ -42,7 +42,7 @@ public class MockConnection extends HttpURLConnection {
             return;
         }
 
-        if (mTimeToGetConnected > getConnectTimeout()) {
+        if (getConnectTimeout() > 0 && mTimeToGetConnected > getConnectTimeout()) {
             try {
                 Thread.sleep(getConnectTimeout());
             } catch (InterruptedException e) {
@@ -76,7 +76,7 @@ public class MockConnection extends HttpURLConnection {
             return mInputStream;
         }
 
-        if (mTimeToGetInput > getReadTimeout()) {
+        if (getReadTimeout() > 0 && mTimeToGetInput > getReadTimeout()) {
             try {
                 Thread.sleep(getReadTimeout());
             } catch (InterruptedException e) {

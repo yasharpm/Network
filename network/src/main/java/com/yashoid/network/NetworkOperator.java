@@ -1,150 +1,298 @@
 package com.yashoid.network;
 
-import com.yashoid.network.OperationExecutor.OnExecutionFinishedListener;
+import com.yashoid.office.office.Office;
 import com.yashoid.office.task.DefaultTaskManager;
 import com.yashoid.office.task.TaskManager;
+import com.yashoid.yashson.Yashson;
 
-import android.os.Handler;
+import java.util.ArrayList;
+import java.util.List;
 
-public class NetworkOperator implements OperationTypes {
-	
-	private static final int TYPE_ALL = 7;
+public class NetworkOperator implements Priorities {
 
-	private static final int DEFAULT_UI_CONTENT_WORKERS = 5;
-	private static final int DEFAULT_USER_ACTION_WORKERS = 1;
-	private static final int DEFAULT_BACKGROUND_WORKERS = 2;
+    private static final int DEFAULT_HIGH_PRIORITY_WORKER_COUNT = 3;
+    private static final int DEFAULT_MEDIUM_PRIORITY_WORKER_COUNT = 4;
+    private static final int DEFAULT_LOW_PRIORITY_WORKER_COUNT = 1;
 
-	private static NetworkOperator mInstance = null;
-	
-	public static NetworkOperator getInstance() {
-		if (mInstance == null) {
-			mInstance = new NetworkOperator(DefaultTaskManager.getInstance());
-		}
-		
-		return mInstance;
-	}
+    private static final String[] PRIORITIES = { HIGH, MEDIUM, LOW };
 
-	private TaskManager mTaskManager;
+    public static class Builder {
 
-	private OperationSelector mSelector;
+        private Yashson mYashson = null;
+        private RequestHeaderWriter mRequestHeaderWriter = null;
+        private TaskManager mTaskManager = null;
+        private int mHighPriorityWorkerCount = DEFAULT_HIGH_PRIORITY_WORKER_COUNT;
+        private int mMediumPriorityWorkerCount = DEFAULT_MEDIUM_PRIORITY_WORKER_COUNT;
+        private int mLowPriorityWorkerCount = DEFAULT_LOW_PRIORITY_WORKER_COUNT;
 
-	private int mTasksOnUiContent = 0;
-	private int mTasksOnUserAction = 0;
-	private int mTasksOnBackground = 0;
-	
-	private Object mProgressStatusLock = new Object();
-	
-	public NetworkOperator(TaskManager taskManager) {
-		mTaskManager = taskManager;
+        public Builder yashson(Yashson yashson) {
+            mYashson = yashson;
 
-		mTaskManager.addSection(SECTION_UI_CONTENT, DEFAULT_UI_CONTENT_WORKERS);
-		mTaskManager.addSection(SECTION_USER_ACTION, DEFAULT_USER_ACTION_WORKERS);
-		mTaskManager.addSection(SECTION_BACKGROUND, DEFAULT_BACKGROUND_WORKERS);
+            return this;
+        }
 
-		mSelector = new OperationSelector();
-	}
-	
-	/**
-	 * It is safe to call this method from any Thread.
-	 * @param operation
-	 */
-	public void post(NetworkOperation operation) {
-		if (operation.getType() != TYPE_URGENT) {
-			mSelector.addOperation(operation);
-			
-			executeNextOperation();
-		}
-		else {
-			new OperationExecutor(mTaskManager, operation, null).run();
-		}
-	}
-	
-	private void executeNextOperation() {
-		synchronized (mProgressStatusLock) {
-			if (!hasAnyWorkerWorking()) {
-				executeNextOperation(TYPE_ALL);
-			}
-			else if (mTasksOnUiContent >= DEFAULT_UI_CONTENT_WORKERS) {
-				return;
-			}
-			else if (mSelector.hasNext(TYPE_UI_CONTENT)) {
-				executeNextOperation(TYPE_UI_CONTENT);
-			}
-			else if (mTasksOnUserAction >= DEFAULT_USER_ACTION_WORKERS) {
-				return;
-			}
-			else if (mSelector.hasNext(TYPE_USER_ACTION)) {
-				executeNextOperation(TYPE_USER_ACTION);
-			}
-			else if (mTasksOnBackground >= DEFAULT_BACKGROUND_WORKERS) {
-				return;
-			}
-			else if (mSelector.hasNext(TYPE_BACKGRUOND)) {
-				executeNextOperation(TYPE_BACKGRUOND);
-			}
-		}
-	}
+        public Builder requsetHeaderWriter(RequestHeaderWriter headerWriter) {
+            mRequestHeaderWriter = headerWriter;
 
-	private boolean hasAnyWorkerWorking() {
-		return mTasksOnUiContent > 0 || mTasksOnUserAction > 0 || mTasksOnBackground > 0;
-	}
-	
-	/** Must be called while having mProgressStatusLock lock.
-	 * @param types
-	 */
-	private void executeNextOperation(int types) {
-		NetworkOperation operation = mSelector.getNextOperation(types);
-		
-		if (operation != null) {
-			mSelector.remove(operation);
+            return this;
+        }
 
-			addToWorkersCount(operation.getType());
+        public Builder taskManager(TaskManager taskManager) {
+            mTaskManager = taskManager;
 
-			new OperationExecutor(mTaskManager, operation, mOnExecutionFinishedListener).run();
-		}
-	}
-	
-	private OnExecutionFinishedListener mOnExecutionFinishedListener = new OnExecutionFinishedListener() {
-		
-		@Override
-		public void onExecutionFinished(NetworkOperation operation) {
-			if (operation.getType() != TYPE_URGENT) {
-				synchronized (mProgressStatusLock) {
-					removeFromWorkersCount(operation.getType());
-				}
-			}
+            return this;
+        }
 
-			executeNextOperation();
-		}
-		
-	};
+        public Builder highPriorityWorkerCount(int count) {
+            mHighPriorityWorkerCount = count;
 
-	private void addToWorkersCount(int type) {
-		switch (type) {
-			case TYPE_UI_CONTENT:
-				mTasksOnUiContent++;
-				return;
-			case TYPE_USER_ACTION:
-				mTasksOnUserAction++;
-				return;
-			case TYPE_BACKGRUOND:
-				mTasksOnBackground++;
-				return;
-		}
-	}
+            return this;
+        }
 
-	private void removeFromWorkersCount(int type) {
-		switch (type) {
-			case TYPE_UI_CONTENT:
-				mTasksOnUiContent--;
-				return;
-			case TYPE_USER_ACTION:
-				mTasksOnUserAction--;
-				return;
-			case TYPE_BACKGRUOND:
-				mTasksOnBackground--;
-				return;
-		}
-	}
-	
+        public Builder mediumPriorityWorkerCount(int count) {
+            mMediumPriorityWorkerCount = count;
+
+            return this;
+        }
+
+        public Builder lowPriorityWorkerCount(int count) {
+            mLowPriorityWorkerCount = count;
+
+            return this;
+        }
+
+        public NetworkOperator build() {
+            Yashson yashson = mYashson == null ? new Yashson() : mYashson;
+            RequestHeaderWriter headerWriter = mRequestHeaderWriter;
+            TaskManager taskManager = mTaskManager == null ? DefaultTaskManager.getInstance() : mTaskManager;
+
+            boolean hasPrioritySections = false;
+
+            for (Office.SectionDescription sectionDescription: taskManager.getSectionDescriptions()) {
+                if (HIGH.equals(sectionDescription.name)) {
+                    hasPrioritySections = true;
+                    break;
+                }
+            }
+
+            if (!hasPrioritySections) {
+                taskManager.addSection(HIGH, mHighPriorityWorkerCount);
+                taskManager.addSection(MEDIUM, mMediumPriorityWorkerCount);
+                taskManager.addSection(LOW, mLowPriorityWorkerCount);
+            }
+
+            return new NetworkOperator(taskManager, headerWriter, yashson);
+        }
+
+    }
+
+    private TaskManager mTaskManager;
+
+    private int[] mWorkerCounts = new int[PRIORITIES.length];
+
+    private RequestHandler mRequestHandler;
+
+    private RequestHeaderWriter mRequestHeaderWriter;
+
+    private Yashson mYashson;
+
+    private NetworkOperator(TaskManager taskManager, RequestHeaderWriter requestHeaderWriter, Yashson yashson) {
+        mTaskManager = taskManager;
+
+        mRequestHeaderWriter = requestHeaderWriter;
+
+        mYashson = yashson;
+
+        for (Office.SectionDescription sectionDescription : taskManager.getSectionDescriptions()) {
+            for (int i = 0; i < mWorkerCounts.length; i++) {
+                if (PRIORITIES[i].equals(sectionDescription.name)) {
+                    mWorkerCounts[i] = sectionDescription.employeeCount;
+                }
+            }
+        }
+
+        mRequestHandler = new RequestHandler();
+    }
+
+    public<T> void runRequest(PreparedRequest<T> request, String priority, RequestResponseCallback<T> callback) {
+        PendingRequest pendingRequest = new PendingRequest<>(request, callback);
+
+        mRequestHandler.onNewRequest(priority, pendingRequest);
+    }
+
+    public<T> NetworkRequest<T> getRequest(Class<T> returnTypeClass, String method, String url) {
+        return getRequest(returnTypeClass, method, url, null);
+    }
+
+    public<T> NetworkRequest<T> getRequest(Class<T> returnTypeClass, String method, String url,
+                                           Object body, String... headers) {
+        return new NetworkRequest<>(this, returnTypeClass, method, url, body,
+                mRequestHeaderWriter, headers);
+    }
+
+    public Yashson getYashson() {
+        return mYashson;
+    }
+
+    private class RequestHandler {
+
+        private RequestSequence[] mSequences = new RequestSequence[PRIORITIES.length];
+
+        protected RequestHandler() {
+            for (int i = 0; i < PRIORITIES.length; i++) {
+                RequestSequence sequence = new RequestSequence(PRIORITIES[i], mWorkerCounts[i]);
+
+                mSequences[i] = sequence;
+
+                if (i > 0) {
+                    sequence.setPriorSequence(mSequences[i - 1]);
+
+                    mSequences[i - 1].setNextSequence(sequence);
+                }
+            }
+        }
+
+        public<T> void onNewRequest(String priority, PendingRequest<T> request) {
+            mSequences[getPriorityIndex(priority)].onNewRequest(request);
+        }
+
+    }
+
+    private class RequestSequence {
+
+        private RequestSequence mPriorSequence = null;
+        private RequestSequence mNextSequence = null;
+
+        private String mSectionName;
+
+        private int mWorkerCount;
+
+        private List<PendingRequest> mWaitingList = new ArrayList<>();
+        private List<PendingRequest> mWorkingList = new ArrayList<>(3);
+
+        protected RequestSequence(String sectionName, int workerCount) {
+            mSectionName = sectionName;
+
+            mWorkerCount = workerCount;
+        }
+
+        public void setPriorSequence(RequestSequence sequence) {
+            mPriorSequence = sequence;
+        }
+
+        public void setNextSequence(RequestSequence sequence) {
+            mNextSequence = sequence;
+        }
+
+        public<T> void onNewRequest(PendingRequest<T> request) {
+            if (mPriorSequence != null && mPriorSequence.hasWorkToDo()) {
+                mWaitingList.add(request);
+                return;
+            }
+
+            if (mWorkingList.size() < mWorkerCount) {
+                runRequest(request);
+            }
+            else {
+                mWaitingList.add(request);
+            }
+        }
+
+        private boolean hasWorkToDo() {
+            return !mWorkingList.isEmpty() || !mWaitingList.isEmpty() || (mPriorSequence != null && mPriorSequence.hasWorkToDo());
+        }
+
+        private void startWorking() {
+            if (mWaitingList.isEmpty()) {
+                if (mWorkingList.isEmpty()) {
+                    if (mNextSequence != null) {
+                        mNextSequence.startWorking();
+                    }
+                    else {
+                        // All is done.
+                    }
+                }
+                else {
+                    // We have nothing waiting. So just wait until everything is done.
+                }
+            }
+            else {
+                while (mWorkingList.size() < mWorkerCount && !mWaitingList.isEmpty()) {
+                    runRequest(mWaitingList.get(0));
+                }
+            }
+        }
+
+        private<T> void runRequest(final PendingRequest<T> request) {
+            mWaitingList.remove(request);
+            mWorkingList.add(request);
+
+            mTaskManager.runTask(mSectionName, new Runnable() {
+
+                @Override
+                public void run() {
+                    final RequestResponse<T> response = request.request.call();
+
+                    mTaskManager.runTask(TaskManager.MAIN, new Runnable() {
+
+                        @Override
+                        public void run() {
+                            mWorkingList.remove(request);
+
+                            if (mPriorSequence != null && mPriorSequence.hasWorkToDo()) {
+                                // Don't try starting any new tasks.
+                            }
+                            else {
+                                if (!mWaitingList.isEmpty()) {
+                                    runRequest(mWaitingList.get(0));
+                                }
+                                else if (mWorkingList.isEmpty()) {
+                                    if (mNextSequence != null) {
+                                        mNextSequence.startWorking();
+                                    }
+                                    else {
+                                        // All is done.
+                                    }
+                                }
+                                else {
+                                    // Other work is being done. We wait until everything is done.
+                                }
+                            }
+
+                            request.callback.onRequestResponse(response);
+                        }
+
+                    }, 0);
+                }
+
+            }, 0);
+        }
+
+    }
+
+    private class PendingRequest<T> {
+
+        private final PreparedRequest<T> request;
+        private final RequestResponseCallback<T> callback;
+
+        public PendingRequest(PreparedRequest<T> request, RequestResponseCallback<T> callback) {
+            this.request = request;
+            this.callback = callback;
+        }
+
+    }
+
+    private static int getPriorityIndex(String priority) {
+        switch (priority) {
+            case HIGH:
+                return 0;
+            case MEDIUM:
+                return 1;
+            case LOW:
+                return 2;
+        }
+
+        throw new IllegalArgumentException("Unrecognized priority name '" + priority + "'.");
+    }
+
 }

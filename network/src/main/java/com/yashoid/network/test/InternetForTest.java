@@ -23,7 +23,9 @@ public class InternetForTest implements URLStreamHandlerFactory {
     }
 
     public static void initialize() {
-        URL.setURLStreamHandlerFactory(getInstance());
+        try {
+            URL.setURLStreamHandlerFactory(getInstance());
+        } catch (Throwable t) { }
     }
 
     private long mTimeToConnect = 400;

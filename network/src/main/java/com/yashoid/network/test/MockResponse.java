@@ -6,7 +6,7 @@ package com.yashoid.network.test;
 
 public class MockResponse {
 
-    public enum ResponseType { JSON, BINARY };
+    public enum ResponseType { JSON, BINARY }
 
     public ResponseType responseType;
     public int responseCode;

@@ -13,7 +13,7 @@ ext {
     siteUrl = 'https://github.com/yasharpm/Network'
     gitUrl = 'https://github.com/yasharpm/Network.git'
 
-    libraryVersion = '1.3.2'
+    libraryVersion = '2.0.0'
 
     developerId = 'yasharpm'
     developerName = 'Yashar PourMohammad'
@@ -48,5 +48,6 @@ android {
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
-    implementation 'com.yashoid:office:1.2.0'
+    implementation 'com.yashoid:office:1.2.1'
+    implementation 'com.yashoid:yashson:1.0.0'
 }
