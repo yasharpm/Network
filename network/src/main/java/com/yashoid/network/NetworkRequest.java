@@ -12,8 +12,10 @@ import org.json.JSONObject;
 import java.io.File;
 import java.io.InputStream;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -121,7 +123,7 @@ public class NetworkRequest<ReturnType> {
     private String prepareUrl(HashMap<String, Object> keyValues) {
         String url = mUrl;
 
-        Set<String> keys = Collections.unmodifiableSet(keyValues.keySet());
+        List<String> keys = new ArrayList<>(keyValues.keySet());
 
         for (String key: keys) {
             String replacementPart = "{" + key + "}";
