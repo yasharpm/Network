@@ -31,9 +31,12 @@ class PreparedNetworkRequest<T> implements PreparedRequest {
     private BodyLoader mBody;
     private HashMap<String, String> mHeaders;
 
-    PreparedNetworkRequest(Yashson yashson, Class<T> returnTypeClass,
+    private int mConnectTimeout;
+    private int mReadTimeout;
+
+    PreparedNetworkRequest(NetworkOperator operator, Class<T> returnTypeClass,
                                      String method, String url, BodyLoader body, String... headers) {
-        mYashson = yashson;
+        mYashson = operator.getYashson();
 
         mReturnTypeClass = returnTypeClass;
 
@@ -46,6 +49,9 @@ class PreparedNetworkRequest<T> implements PreparedRequest {
         for (int i = 0; i < headers.length; i += 2) {
             mHeaders.put(headers[i], headers[i + 1]);
         }
+
+        mConnectTimeout = operator.getReadTimeout();
+        mReadTimeout = operator.getReadTimeout();
     }
 
     @Override
@@ -74,13 +80,25 @@ class PreparedNetworkRequest<T> implements PreparedRequest {
     }
 
     @Override
+    public void setConnectTimeout(int timeout) {
+        mConnectTimeout = timeout;
+    }
+
+    @Override
+    public void setReadTimeout(int timeout) {
+        mReadTimeout = timeout;
+    }
+
+    @Override
     public RequestResponse<T> call() {
         URL url;
+
+        int responseCode = 0;
 
         try {
             url = new URL(mUrl);
         } catch (MalformedURLException e) {
-            return RequestResponse.failedResponse(this, e);
+            return RequestResponse.failedResponse(this, responseCode, e);
         }
 
         HttpURLConnection connection = null;
@@ -88,10 +106,13 @@ class PreparedNetworkRequest<T> implements PreparedRequest {
         try {
             connection = (HttpURLConnection) url.openConnection();
 
+            connection.setConnectTimeout(mConnectTimeout);
+            connection.setReadTimeout(mReadTimeout);
+
             connection.setDoInput(true);
 
             if (!setMethod(connection, mMethod)) {
-                return RequestResponse.failedResponse(this, new Exception("Failed to set method '" + mMethod + "' on request."));
+                return RequestResponse.failedResponse(this, responseCode, new Exception("Failed to set method '" + mMethod + "' on request."));
             }
 
             for (Map.Entry<String, String> header: mHeaders.entrySet()) {
@@ -106,11 +127,13 @@ class PreparedNetworkRequest<T> implements PreparedRequest {
                 mBody.write(connection.getOutputStream());
             }
 
-            int responseCode = connection.getResponseCode();
+            responseCode = connection.getResponseCode();
 
-            InputStream input = connection.getInputStream();
+            InputStream input;
 
-            if (input == null) {
+            try {
+                input = connection.getInputStream();
+            } catch (Throwable t) {
                 input = connection.getErrorStream();
             }
 
@@ -134,7 +157,7 @@ class PreparedNetworkRequest<T> implements PreparedRequest {
 
             return RequestResponse.successfulResponse(this, responseCode, content);
         } catch (IOException e) {
-            return RequestResponse.failedResponse(this, e);
+            return RequestResponse.failedResponse(this, responseCode, e);
         } finally {
             if (connection != null && !mReturnTypeClass.isAssignableFrom(InputStream.class)) {
                 try {

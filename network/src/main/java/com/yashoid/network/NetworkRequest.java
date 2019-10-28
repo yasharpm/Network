@@ -110,7 +110,7 @@ public class NetworkRequest<ReturnType> {
         }
 
         PreparedNetworkRequest<ReturnType> preparedRequest =
-                new PreparedNetworkRequest<>(mOperator.getYashson(), mReturnTypeClass,
+                new PreparedNetworkRequest<>(mOperator, mReturnTypeClass,
                         mMethod, url, preparedBody, mHeaders);
 
         if (mHeaderWriter != null) {

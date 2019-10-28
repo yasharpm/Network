@@ -2,15 +2,15 @@ package com.yashoid.network;
 
 public class RequestResponse<T> {
 
-    protected static<T> RequestResponse<T> failedResponse(PreparedRequest request, Exception exception) {
-        return new RequestResponse<>(request, false, 0, null, exception);
+    public static<T> RequestResponse<T> failedResponse(PreparedRequest request, int responseCode, Exception exception) {
+        return new RequestResponse<>(request, false, responseCode, null, exception);
     }
 
-    protected static<T> RequestResponse<T> failedResponse(PreparedRequest request, int responseCode) {
+    public static<T> RequestResponse<T> failedResponse(PreparedRequest request, int responseCode) {
         return new RequestResponse<>(request, false, responseCode, null, null);
     }
 
-    protected static<T> RequestResponse<T> successfulResponse(PreparedRequest request, int responseCode, T content) {
+    public static<T> RequestResponse<T> successfulResponse(PreparedRequest request, int responseCode, T content) {
         return new RequestResponse<>(request, true, responseCode, content, null);
     }
 

@@ -11,9 +11,11 @@
 Add the dependency:
 ```Groovy
 dependencies {
-	compile 'com.yashoid:network:1.3.2'
+	compile 'com.yashoid:network:2.1.0'
 }
 ```
+
+<h1>Following description is out dated. And will be updated soon.</h1>
 
 <h2>Network Operator</h2>
 There are three queues for running the operations.

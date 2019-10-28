@@ -12,7 +12,10 @@ public class NetworkOperator implements Priorities {
 
     private static final int DEFAULT_HIGH_PRIORITY_WORKER_COUNT = 3;
     private static final int DEFAULT_MEDIUM_PRIORITY_WORKER_COUNT = 4;
-    private static final int DEFAULT_LOW_PRIORITY_WORKER_COUNT = 1;
+    private static final int DEFAULT_LOW_PRIORITY_WORKER_COUNT = 2;
+
+    private static final int DEFAULT_CONNECT_TIMEOUT = 4_000;
+    private static final int DEFAULT_READ_TIMEOUT = 8_000;
 
     private static final String[] PRIORITIES = { HIGH, MEDIUM, LOW };
 
@@ -24,6 +27,8 @@ public class NetworkOperator implements Priorities {
         private int mHighPriorityWorkerCount = DEFAULT_HIGH_PRIORITY_WORKER_COUNT;
         private int mMediumPriorityWorkerCount = DEFAULT_MEDIUM_PRIORITY_WORKER_COUNT;
         private int mLowPriorityWorkerCount = DEFAULT_LOW_PRIORITY_WORKER_COUNT;
+        private int mConnectTimeout = DEFAULT_CONNECT_TIMEOUT;
+        private int mReadTimeout = DEFAULT_READ_TIMEOUT;
 
         public Builder yashson(Yashson yashson) {
             mYashson = yashson;
@@ -61,6 +66,18 @@ public class NetworkOperator implements Priorities {
             return this;
         }
 
+        public Builder connectTimeout(int timeout) {
+            mConnectTimeout = timeout;
+
+            return this;
+        }
+
+        public Builder readTimeout(int timeout) {
+            mReadTimeout = timeout;
+
+            return this;
+        }
+
         public NetworkOperator build() {
             Yashson yashson = mYashson == null ? new Yashson() : mYashson;
             RequestHeaderWriter headerWriter = mRequestHeaderWriter;
@@ -81,7 +98,7 @@ public class NetworkOperator implements Priorities {
                 taskManager.addSection(LOW, mLowPriorityWorkerCount);
             }
 
-            return new NetworkOperator(taskManager, headerWriter, yashson);
+            return new NetworkOperator(taskManager, headerWriter, yashson, mConnectTimeout, mReadTimeout);
         }
 
     }
@@ -96,7 +113,11 @@ public class NetworkOperator implements Priorities {
 
     private Yashson mYashson;
 
-    private NetworkOperator(TaskManager taskManager, RequestHeaderWriter requestHeaderWriter, Yashson yashson) {
+    private int mConnectTimeout;
+    private int mReadTimeout;
+
+    private NetworkOperator(TaskManager taskManager, RequestHeaderWriter requestHeaderWriter,
+                            Yashson yashson, int connectTimeout, int readTimeout) {
         mTaskManager = taskManager;
 
         mRequestHeaderWriter = requestHeaderWriter;
@@ -112,6 +133,17 @@ public class NetworkOperator implements Priorities {
         }
 
         mRequestHandler = new RequestHandler();
+
+        mConnectTimeout = connectTimeout;
+        mReadTimeout = readTimeout;
+    }
+
+    protected int getConnectTimeout() {
+        return mConnectTimeout;
+    }
+
+    protected int getReadTimeout() {
+        return mReadTimeout;
     }
 
     public<T> void runRequest(PreparedRequest<T> request, String priority, RequestResponseCallback<T> callback) {

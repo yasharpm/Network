@@ -12,6 +12,10 @@ public interface PreparedRequest<T> {
 
     void setHeader(String name, String value);
 
+    void setConnectTimeout(int timeout);
+
+    void setReadTimeout(int timeout);
+
     RequestResponse<T> call();
 
 }
