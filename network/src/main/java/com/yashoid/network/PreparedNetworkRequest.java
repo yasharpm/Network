@@ -106,6 +106,9 @@ class PreparedNetworkRequest<T> implements PreparedRequest {
         try {
             connection = (HttpURLConnection) url.openConnection();
 
+            connection.setUseCaches(false);
+            connection.setInstanceFollowRedirects(true);
+
             connection.setConnectTimeout(mConnectTimeout);
             connection.setReadTimeout(mReadTimeout);
 

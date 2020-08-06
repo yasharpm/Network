@@ -11,7 +11,7 @@
 Add the dependency:
 ```Groovy
 dependencies {
-	compile 'com.yashoid:network:2.1.0'
+	compile 'com.yashoid:network:2.1.1'
 }
 ```
 
